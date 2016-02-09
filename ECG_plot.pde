@@ -13,33 +13,33 @@
 import processing.serial.*;
  
 Serial myPort;        // The serial port
-int xPos = 1;         // horizontal position of the graph
+int xPos = 1;         // stores horizontal index (x value) for the points being plotted
  
-float fValue;
-float height_old = 0;
-PrintWriter output;
-boolean newVal = false;
+float fValue; // stores serial data
+float height_old = 0; // used in plotting
+PrintWriter output; // used for writing out data to txt file
+boolean newVal = false; // used for updating plot with new captures
  
 void setup () {
-  size(1040, 240);
+  size(1040, 240); // size of plot window
  
-  println(Serial.list());
+  println(Serial.list()); // use for identifying the correct COM port. Once identified, index as seen in the next line
   myPort = new Serial(this, Serial.list()[1], 9600); //check Device Manager to find the correct port (if using XDS110)
   myPort.bufferUntil('\n');
   background(0);
-  stroke(127, 34, 255);
-  output = createWriter("ecg.txt");
+  stroke(127, 34, 255); // color of the "strokes" used for plotting the data
+  output = createWriter("ecg.txt"); // change name of output file as needed
 }
  
-void draw () {
+void draw () { // used to draw a new stroke corresponding to data reads from the serialEvent below
   if (newVal) {
-    line(xPos, height_old, xPos, height - fValue);
-    output.println(fValue);
+    line(xPos, height_old, xPos, height - fValue); // linear interpolation
+    output.println(fValue); // use for monitoring the captured values in console. Can comment out too.
     if (++xPos >= width) {
-      xPos = 0;
+      xPos = 0; // start over from the left extreme
       background(0);
     }
-    newVal = false;
+    newVal = false; // will be updated again by serialEvent
     height_old = height - fValue;
   }
 }
@@ -47,14 +47,14 @@ void draw () {
 void serialEvent (Serial myPort) {
   String inString = myPort.readStringUntil('\n');
   if (inString != null) {
-    inString = trim(inString);
-    fValue = float(inString);
-    fValue = map(fValue, 0, 1023, 0, height);
-    newVal = true;
+    inString = trim(inString); // remove white space
+    fValue = float(inString); // cast as float
+    fValue = map(fValue, 0, 1023, 0, height); // map values to plot axes
+    newVal = true; // would allow draw() to run
   }
 }
 
-void keyPressed(){
+void keyPressed(){ // press any key to flush the buffer (write out the txt file). This may fail. Use printOnly code.
  output.flush();
  output.close();
  exit();
